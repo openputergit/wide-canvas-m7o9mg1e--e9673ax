@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knapsack Problem Solver</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .brick-pattern {
+            background-color: #3b82f6;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="min-h-screen">
+        <header class="brick-pattern text-white py-6">
+            <div class="container mx-auto px-4">
+                <h1 class="text-3xl font-bold text-center">Knapsack Problem Solver</h1>
+                <p class="text-center mt-2">An interactive tool to solve the 0/1 Knapsack problem</p>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-4 py-8">
+            <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-lg p-6">
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold mb-4">Input Parameters</h2>
+                    <div class="grid gap-4 md:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Knapsack Capacity</label>
+                            <input type="number" id="capacity" class="w-full px-3 py-2 border rounded-md" min="1" value="10">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Number of Items</label>
+                            <input type="number" id="numItems" class="w-full px-3 py-2 border rounded-md" min="1" value="3">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium mb-3">Items</h3>
+                    <div id="itemsContainer" class="space-y-4"></div>
+                    <button onclick="generateItems()" class="mt-4 bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">
+                        Generate Items
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <button onclick="solveKnapsack()" class="w-full bg-green-500 text-white px-6 py-3 rounded-md hover:bg-green-600">
+                        Solve Knapsack Problem
+                    </button>
+                </div>
+
+                <div id="solution" class="hidden">
+                    <h3 class="text-lg font-medium mb-3">Solution</h3>
+                    <div class="bg-gray-50 p-4 rounded-md">
+                        <p class="mb-2">Maximum Value: <span id="maxValue" class="font-semibold"></span></p>
+                        <p>Selected Items: <span id="selectedItems" class="font-semibold"></span></p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function generateItems() {
+            const numItems = parseInt(document.getElementById('numItems').value);
+            const container = document.getElementById('itemsContainer');
+            container.innerHTML = '';
+
+            for (let i = 0; i < numItems; i++) {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'grid grid-cols-2 gap-4';
+                itemDiv.innerHTML = `
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Value of Item ${i + 1}</label>
+                        <input type="number" class="value-input w-full px-3 py-2 border rounded-md" min="1" value="${Math.floor(Math.random() * 20) + 1}">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-2">Weight of Item ${i + 1}</label>
+                        <input type="number" class="weight-input w-full px-3 py-2 border rounded-md" min="1" value="${Math.floor(Math.random() * 10) + 1}">
+                    </div>
+                `;
+                container.appendChild(itemDiv);
+            }
+        }
+
+        function solveKnapsack() {
+            const capacity = parseInt(document.getElementById('capacity').value);
+            const values = Array.from(document.getElementsByClassName('value-input')).map(input => parseInt(input.value));
+            const weights = Array.from(document.getElementsByClassName('weight-input')).map(input => parseInt(input.value));
+            const n = values.length;
+
+            // Create DP table
+            const dp = Array(n + 1).fill().map(() => Array(capacity + 1).fill(0));
+            const selected = Array(n + 1).fill().map(() => Array(capacity + 1).fill(false));
+
+            // Fill DP table
+            for (let i = 1; i <= n; i++) {
+                for (let w = 0; w <= capacity; w++) {
+                    if (weights[i-1] <= w) {
+                        const includeItem = values[i-1] + dp[i-1][w-weights[i-1]];
+                        const excludeItem = dp[i-1][w];
+                        if (includeItem > excludeItem) {
+                            dp[i][w] = includeItem;
+                            selected[i][w] = true;
+                        } else {
+                            dp[i][w] = excludeItem;
+                        }
+                    } else {
+                        dp[i][w] = dp[i-1][w];
+                    }
+                }
+            }
+
+            // Backtrack to find selected items
+            let w = capacity;
+            const selectedItems = [];
+            for (let i = n; i > 0; i--) {
+                if (selected[i][w]) {
+                    selectedItems.push(i);
+                    w -= weights[i-1];
+                }
+            }
+
+            // Display solution
+            document.getElementById('solution').classList.remove('hidden');
+            document.getElementById('maxValue').textContent = dp[n][capacity];
+            document.getElementById('selectedItems').textContent = selectedItems.reverse().join(', ');
+        }
+
+        // Initialize with some items
+        generateItems();
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
